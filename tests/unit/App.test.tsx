@@ -2,10 +2,11 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, it, vi } from 'vitest';
 import App from '../../src/App';
-import { getWeather, searchCities } from '../../src/services/weatherService';
+import { getWeather, searchCities, WeatherServiceError } from '../../src/services/weatherService';
 import type { City, WeatherData } from '../../src/types/weather';
 
-vi.mock('../../src/services/weatherService', () => ({
+vi.mock('../../src/services/weatherService', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/services/weatherService')>()),
   searchCities: vi.fn(),
   getWeather: vi.fn(),
 }));
@@ -53,7 +54,7 @@ it('permite buscar, selecionar outra cidade e trocar unidade sem nova consulta',
 it('apresenta estado vazio e permite repetir uma falha', async () => {
   vi.mocked(searchCities)
     .mockResolvedValueOnce([])
-    .mockRejectedValueOnce(new Error('Falha de rede.'))
+    .mockRejectedValueOnce(new WeatherServiceError('Falha de rede.'))
     .mockResolvedValueOnce([first]);
   vi.mocked(getWeather).mockResolvedValue(weather(first));
   const user = userEvent.setup();

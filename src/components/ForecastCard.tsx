@@ -1,28 +1,41 @@
-import type { ForecastDay, Unit } from '../types/weather';
+import { formatForecastDate } from '../lib/format';
 import { formatTemperature } from '../lib/temperature';
-import { getWeatherIcon, getWeatherLabel } from '../lib/weatherCodes';
-import { getDayLabel, getShortDate } from '../lib/format';
+import { getWeatherDescription } from '../lib/weatherCodes';
+import type { ForecastDay, Unit } from '../types/weather';
 
 interface ForecastCardProps {
   day: ForecastDay;
-  index: number;
   unit: Unit;
+  isToday?: boolean;
 }
 
-/** Card de um dia da previsão. */
-export default function ForecastCard({ day, index, unit }: ForecastCardProps) {
+export default function ForecastCard({ day, unit, isToday = false }: ForecastCardProps) {
+  const date = formatForecastDate(day.date);
+  const condition = getWeatherDescription(day.weatherCode);
+
   return (
-    <li className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-center backdrop-blur-md">
-      <p className="font-semibold">{getDayLabel(day.date, index)}</p>
-      <p className="text-xs text-white/50">{getShortDate(day.date)}</p>
-      <span aria-hidden="true" className="text-3xl" title={getWeatherLabel(day.weatherCode)}>
-        {getWeatherIcon(day.weatherCode)}
-      </span>
-      <p className="text-sm">
-        <span className="font-semibold">{formatTemperature(day.max, unit)}</span>{' '}
-        <span className="text-white/50">{formatTemperature(day.min, unit)}</span>
+    <li className="min-w-0 rounded-2xl border border-white/[0.08] bg-white/[0.035] px-3 py-4 text-center transition hover:border-teal-200/25 hover:bg-white/[0.07] sm:px-4">
+      <p
+        className={`text-xs font-semibold uppercase ${isToday ? 'text-teal-200' : 'text-slate-400'}`}
+      >
+        {isToday ? 'Hoje' : date.weekday}
       </p>
-      <p className="text-xs text-accent-400">💧 {day.precipitationProbability}%</p>
+      <p className="mt-1 text-[11px] text-slate-500">{date.day}</p>
+      <span aria-label={condition.label} className="my-3 block text-3xl" role="img">
+        {condition.icon}
+      </span>
+      <p className="truncate text-xs text-slate-300">{condition.label}</p>
+      <div className="mt-3 flex justify-center gap-2 text-sm font-medium">
+        {day.max !== undefined && (
+          <span className="text-white">{formatTemperature(day.max, unit)}</span>
+        )}
+        {day.min !== undefined && (
+          <span className="text-slate-500">{formatTemperature(day.min, unit)}</span>
+        )}
+      </div>
+      {day.precipitationProbability !== undefined && (
+        <p className="mt-2 text-[11px] text-slate-500">Chuva {day.precipitationProbability}%</p>
+      )}
     </li>
   );
 }

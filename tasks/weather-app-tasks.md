@@ -14,7 +14,7 @@ Derivado de [specs/weather-app-spec.md](../specs/weather-app-spec.md) e [plans/w
 - **Dependências:** Nenhuma.
 - **Arquivos prováveis:** `specs/weather-app-spec.md`, `plans/weather-app-plan.md`.
 - **Tipo:** Data.
-- **Bloqueio:** requer decisão do responsável pelo produto antes da implementação final da janela da API.
+- **Decisão:** cinco dias de calendário incluindo hoje, com `forecast_days=5` e `timezone=auto`.
 
 ### T-02 — Alinhar os tipos de domínio aos dados opcionais
 
@@ -95,9 +95,9 @@ Derivado de [specs/weather-app-spec.md](../specs/weather-app-spec.md) e [plans/w
 
 - **Descrição:** Ajustar o hook para separar busca de cidades da consulta meteorológica e representar as etapas do fluxo.
 - **Critérios de aceite:**
-  - Após uma busca com resultados, o hook expõe as cidades e aguarda seleção; não consulta automaticamente a primeira cidade.
+  - Após uma busca com resultados, o hook expõe as cidades e consulta automaticamente a primeira, permitindo selecionar outra.
   - `selectCity` consulta o clima apenas para a cidade escolhida.
-  - Estados distinguem inicial, busca, seleção, carregamento do clima, sucesso, vazio e erro.
+  - Estados distinguem inicial, carregamento, sucesso, vazio e erro.
   - `retry` repete a etapa que falhou usando o último contexto válido.
 - **Dependências:** T-03, T-05, T-07.
 - **Arquivos prováveis:** `src/hooks/useWeather.ts`.
@@ -109,7 +109,7 @@ Derivado de [specs/weather-app-spec.md](../specs/weather-app-spec.md) e [plans/w
 - **Critérios de aceite:**
   - Testes verificam busca sem resultados, lista de resultados e seleção de cidade.
   - Testes verificam sucesso, erro e nova tentativa.
-  - Testes confirmam que a busca não seleciona automaticamente a primeira cidade.
+  - Testes confirmam que a busca carrega automaticamente a primeira cidade.
 - **Dependências:** T-08.
 - **Arquivos prováveis:** `tests/unit/useWeather.test.ts`.
 - **Tipo:** Test.
@@ -141,7 +141,7 @@ Derivado de [specs/weather-app-spec.md](../specs/weather-app-spec.md) e [plans/w
 
 - **Descrição:** Integrar o formulário e os resultados ao hook e renderizar os estados de busca e consulta na aplicação.
 - **Critérios de aceite:**
-  - Submeter uma busca apresenta carregamento e depois resultados selecionáveis.
+  - Submeter uma busca apresenta carregamento, resultados selecionáveis e os dados da primeira cidade.
   - Selecionar uma cidade carrega e exibe seus dados.
   - Busca sem correspondência exibe orientação para tentar novamente.
   - Erro exibe mensagem compreensível e ação de retry.
@@ -203,7 +203,7 @@ Derivado de [specs/weather-app-spec.md](../specs/weather-app-spec.md) e [plans/w
 
 - **Descrição:** Validar os fluxos ponta a ponta em desktop e viewport móvel usando respostas Open-Meteo interceptadas.
 - **Critérios de aceite:**
-  - Teste percorre busca, seleção explícita, clima atual e previsão com a quantidade de dias definida em T-01.
+  - Teste percorre busca, consulta automática, seleção de outra cidade, clima atual e previsão com a quantidade de dias definida em T-01.
   - Testes cobrem ausência de resultados, falha com nova tentativa e alternância de unidade.
   - Interações principais funcionam por teclado e sem rolagem horizontal na viewport móvel.
   - Os testes não dependem de rede real nem de quota da Open-Meteo.

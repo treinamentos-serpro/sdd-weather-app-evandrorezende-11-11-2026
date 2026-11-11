@@ -2,20 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-}
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-html,
-body,
-#root {
-  height: 100%;
-}
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    color: #eef3fb;
+    background-color: #0b1020;
+    background-image:
+      radial-gradient(ellipse at 8% -12%, rgb(38 123 119 / 22%), transparent 48%),
+      radial-gradient(ellipse at 96% 4%, rgb(78 94 160 / 22%), transparent 42%),
+      linear-gradient(145deg, #0b1020 15%, #10172a 58%, #0b1020 100%);
+    background-attachment: fixed;
+  }
 
-body {
-  margin: 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  background:
-    radial-gradient(circle at 20% 0%, rgba(109, 124, 255, 0.18), transparent 40%),
-    radial-gradient(circle at 80% 10%, rgba(139, 155, 255, 0.12), transparent 35%), #0b1020;
+  button,
+  input {
+    font: inherit;
+  }
+
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid #67e8d1;
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    color: #071411;
+    background: #67e8d1;
+  }
 }

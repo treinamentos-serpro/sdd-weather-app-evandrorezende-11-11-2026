@@ -1,44 +1,21 @@
-/**
- * Funções puras de formatação de datas para a previsão.
- */
-
-const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const MONTHS = [
-  'Jan',
-  'Fev',
-  'Mar',
-  'Abr',
-  'Mai',
-  'Jun',
-  'Jul',
-  'Ago',
-  'Set',
-  'Out',
-  'Nov',
-  'Dez',
-];
-
-/** Faz parse de uma data ISO (YYYY-MM-DD) como data local, sem fuso. */
-function parseLocalDate(iso: string): Date {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, (month ?? 1) - 1, day ?? 1);
+export function formatLongDate(date: Date): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
 }
 
-/**
- * Rótulo do dia relativo a "hoje":
- * - índice 0 → "Hoje"
- * - índice 1 → "Amanhã"
- * - demais → dia da semana abreviado
- */
-export function getDayLabel(iso: string, index: number): string {
-  if (index === 0) return 'Hoje';
-  if (index === 1) return 'Amanhã';
-  const date = parseLocalDate(iso);
-  return WEEKDAYS[date.getDay()];
-}
+export function formatForecastDate(date: string): { weekday: string; day: string } {
+  const [year, month, day] = date.split('-').map(Number);
+  const parsedDate = new Date(year, month - 1, day);
 
-/** Formata a data como "12 Jun". */
-export function getShortDate(iso: string): string {
-  const date = parseLocalDate(iso);
-  return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  return {
+    weekday: new Intl.DateTimeFormat('pt-BR', { weekday: 'short' })
+      .format(parsedDate)
+      .replace('.', ''),
+    day: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
+      .format(parsedDate)
+      .replace('.', ''),
+  };
 }

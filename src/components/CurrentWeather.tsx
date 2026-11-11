@@ -1,76 +1,67 @@
-import type { CurrentWeather as CurrentWeatherType, City, Unit } from '../types/weather';
-import { formatTemperature } from '../lib/temperature';
-import { getWeatherIcon, getWeatherLabel } from '../lib/weatherCodes';
+import { formatLongDate } from '../lib/format';
+import { formatTemperature, unitLabel } from '../lib/temperature';
+import { getWeatherDescription } from '../lib/weatherCodes';
+import type { Unit, WeatherData } from '../types/weather';
 
 interface CurrentWeatherProps {
-  city: City;
-  current: CurrentWeatherType;
+  weather: WeatherData;
   unit: Unit;
 }
 
-interface MetricProps {
-  icon: string;
-  label: string;
-  value: string;
-}
-
-function Metric({ icon, label, value }: MetricProps) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-md">
-      <span aria-hidden="true" className="text-xl">
-        {icon}
-      </span>
-      <div>
-        <p className="text-xs text-white/50">{label}</p>
-        <p className="font-semibold">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-/** Seção "hero" com as condições atuais da cidade selecionada. */
-export default function CurrentWeather({ city, current, unit }: CurrentWeatherProps) {
-  const location = [city.admin1, city.country].filter(Boolean).join(', ');
+export default function CurrentWeather({ weather, unit }: CurrentWeatherProps) {
+  const condition = getWeatherDescription(weather.current.weatherCode);
+  const today = formatLongDate(new Date());
 
   return (
     <section
-      aria-label="Clima atual"
-      className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md shadow-glass md:p-8"
+      aria-labelledby="current-weather-title"
+      className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.055] p-5 shadow-glass backdrop-blur-xl sm:p-8 lg:p-10"
     >
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+      <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
         <div>
-          <h2 className="text-2xl font-bold md:text-3xl">{city.name}</h2>
-          {location && <p className="text-white/60">{location}</p>}
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-200">
+            Agora · {today}
+          </p>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl" id="current-weather-title">
+            {weather.city.name}
+            <span className="ml-2 text-lg font-normal text-slate-400 sm:text-xl">
+              {weather.city.region ? `${weather.city.region}, ` : ''}{weather.city.country}
+            </span>
+          </h1>
 
-          <div className="mt-6 flex items-center gap-4">
-            <span aria-hidden="true" className="text-6xl">
-              {getWeatherIcon(current.weatherCode)}
+          <div className="mt-5 flex items-center gap-4 sm:gap-6">
+            <span aria-label={condition.label} className="text-6xl sm:text-7xl" role="img">
+              {condition.icon}
             </span>
-            <span className="text-6xl font-light md:text-7xl">
-              {formatTemperature(current.temperature, unit)}
-            </span>
+            <div>
+              <p className="text-6xl font-light leading-none tracking-tight text-white sm:text-7xl">
+                {formatTemperature(weather.current.temperature, unit)}
+                <span className="ml-1 align-top text-2xl font-normal text-slate-300">{unitLabel(unit)}</span>
+              </p>
+              <p className="mt-3 text-base text-slate-300">{condition.label}</p>
+              {weather.current.feelsLike !== undefined && (
+                <p className="mt-1 text-sm text-slate-400">
+                  Sensação de {formatTemperature(weather.current.feelsLike, unit)}
+                </p>
+              )}
+            </div>
           </div>
-          <p className="mt-2 text-white/70">{getWeatherLabel(current.weatherCode)}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Metric icon="💧" label="Umidade" value={`${Math.round(current.humidity)}%`} />
-          <Metric
-            icon="💨"
-            label="Vento"
-            value={`${Math.round(current.windSpeed)} km/h`}
-          />
-          <Metric
-            icon="🌧️"
-            label="Precipitação"
-            value={`${current.precipitation} mm`}
-          />
-          <Metric
-            icon="📊"
-            label="Pressão"
-            value={`${Math.round(current.pressure)} hPa`}
-          />
-        </div>
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-4 border-t border-white/10 pt-5 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
+          {weather.current.humidity !== undefined && <div>
+            <dt className="text-xs text-slate-400">Umidade</dt>
+            <dd className="mt-1 text-lg font-medium text-white">{weather.current.humidity}%</dd>
+          </div>}
+          {weather.current.windSpeed !== undefined && <div>
+            <dt className="text-xs text-slate-400">Vento</dt>
+            <dd className="mt-1 text-lg font-medium text-white">{weather.current.windSpeed} <span className="text-xs font-normal text-slate-400">km/h</span></dd>
+          </div>}
+          {weather.current.pressure !== undefined && <div>
+            <dt className="text-xs text-slate-400">Pressão</dt>
+            <dd className="mt-1 text-lg font-medium text-white">{weather.current.pressure} <span className="text-xs font-normal text-slate-400">hPa</span></dd>
+          </div>}
+        </dl>
       </div>
     </section>
   );

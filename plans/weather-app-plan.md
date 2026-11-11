@@ -120,7 +120,7 @@ Regras do modelo:
 1. A pessoa informa um nome; a UI remove espaços periféricos e impede consulta vazia.
 2. O hook marca o fluxo como `loading` e solicita cidades ao serviço de geocodificação.
 3. O serviço mapeia resultados para `City`; lista vazia resulta em estado `empty`.
-4. A UI apresenta os resultados com cidade, região (se fornecida) e país. A pessoa seleciona uma cidade; a seleção não deve depender apenas da primeira correspondência.
+4. O hook consulta automaticamente a primeira cidade e a UI apresenta os resultados com cidade, região (se fornecida) e país para permitir outra seleção.
 5. O hook solicita clima atual e previsão para latitude/longitude selecionadas. O serviço mapeia a resposta para `WeatherData`.
 6. Em sucesso, o hook mantém cidade e dados selecionados em estado `success`; a tela compõe clima atual e previsão.
 7. O controle de unidade altera apenas estado local de apresentação; a tela converte e formata todas as temperaturas em Celsius ou Fahrenheit.
@@ -140,10 +140,10 @@ Cada nova busca deve invalidar ou cancelar requisições anteriores para evitar 
 ### Open-Meteo Forecast API
 
 - **Endpoint:** `GET https://api.open-meteo.com/v1/forecast`
-- **Parâmetros:** `latitude`, `longitude`, `current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`, `daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`, `temperature_unit=celsius`, `timezone=auto` e `forecast_days`.
+- **Parâmetros:** `latitude`, `longitude`, `current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,precipitation,weather_code`, `daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`, `timezone=auto` e `forecast_days=5`.
 - **Mapeamento:** `current` e matrizes de `daily` são convertidos em entidades `CurrentWeather` e `ForecastDay`; alinhar arrays pelo índice e validar os campos obrigatórios.
-- **Janela de previsão:** o parâmetro precisa cobrir a decisão de produto sobre incluir hoje ou exibir cinco dias completos futuros. Enquanto isso não for resolvido, manter a janela configurável e não assumir que `forecast_days=5` necessariamente significa cinco dias posteriores a hoje.
-- **Unidades:** solicitar temperatura em Celsius para manter o contrato do domínio; se a velocidade do vento for exibida, escolher e rotular uma unidade consistente (por exemplo, km/h).
+- **Janela de previsão:** `forecast_days=5` retorna cinco dias de calendário, incluindo hoje no fuso horário da cidade.
+- **Unidades:** usar Celsius e km/h, padrões da API, mantendo Celsius no domínio e rotulando a velocidade do vento.
 - **Operação:** usar `URL`/`URLSearchParams`, `fetch`, timeout via `AbortController` e checagem de `Response.ok`. Não há chave de API; respeitar limites de uso e exibir atribuição à Open-Meteo.
 
 A integração direta do navegador é apropriada para a API pública sem credenciais. Se uma política de quota, disponibilidade ou uso futuro exigir segredo ou cache compartilhado, introduzir backend/proxy será uma decisão arquitetural separada, fora do escopo atual.
@@ -153,9 +153,7 @@ A integração direta do navegador é apropriada para a API pública sem credenc
 Usar estado local React, sem Redux/Zustand ou servidor de cache. O estado da consulta deve ser uma máquina discriminada para evitar combinações incoerentes:
 
 - `idle`: ainda sem busca;
-- `searching`: busca de cidade em andamento;
-- `selecting`: resultados disponíveis aguardando seleção;
-- `loadingWeather`: carregando clima para a cidade selecionada;
+- `loading`: busca de cidade ou carregamento do clima em andamento;
 - `success`: dados prontos;
 - `empty`: busca sem correspondência;
 - `error`: falha recuperável com mensagem e contexto de retry.
@@ -207,8 +205,7 @@ Para mudanças em código, executar `pnpm lint`, `pnpm build` e `pnpm test`; exe
 
 ## Risks & Trade-offs
 
-- **Definição dos cinco dias:** a especificação ainda não decide se a lista inclui hoje. Isso afeta `forecast_days`, rótulos e critérios de teste; resolver antes de fechar a implementação da previsão.
-- **Seleção ambígua:** selecionar automaticamente a primeira cidade pode consultar local incorreto. Preferir seleção explícita com país/região visíveis, mesmo adicionando um passo ao fluxo.
+- **Seleção ambígua:** a primeira cidade é consultada automaticamente e pode não ser a desejada; apresentar país/região e permitir escolher outra correspondência.
 - **Integração direta versus backend:** chamada direta é simples e suficiente sem API key, mas transfere ao cliente disponibilidade, quota e retry. Um backend só é justificado por requisito operacional ou segredo futuro.
 - **Estado local versus cache dedicado:** estado local reduz dependências e atende à consulta única; não oferece cache sofisticado nem deduplicação global de requisições. Reavaliar somente se histórico/favoritos ou múltiplas cidades entrarem no escopo.
 - **Campos opcionais da API:** dados podem variar por local e resposta. Modelar ausência explicitamente melhora honestidade, mas exige que componentes sejam tolerantes a conteúdo parcial.

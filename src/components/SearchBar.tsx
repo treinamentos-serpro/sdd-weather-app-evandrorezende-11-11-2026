@@ -1,47 +1,97 @@
 import { useState, type FormEvent } from 'react';
+import type { City } from '../types/weather';
+import EmptyState from './states/EmptyState';
 
 interface SearchBarProps {
-  onSearch: (city: string) => void;
-  disabled?: boolean;
+  results: City[];
+  isLoading: boolean;
+  message: string | null;
+  onSearch: (query: string) => void;
+  onSelect: (city: City) => void;
 }
 
-/** Barra de busca de cidade. Bloqueia submit com input vazio. */
-export default function SearchBar({ onSearch, disabled }: SearchBarProps) {
-  const [value, setValue] = useState('');
+export default function SearchBar({
+  results,
+  isLoading,
+  message,
+  onSearch,
+  onSelect,
+}: SearchBarProps) {
+  const [query, setQuery] = useState('');
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    onSearch(trimmed);
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSearch(query);
   }
 
   return (
-    <form role="search" onSubmit={handleSubmit} className="w-full max-w-md">
-      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-md focus-within:border-accent-500">
-        <span aria-hidden="true" className="text-white/50">
-          🔍
+    <div className="relative w-full max-w-xl">
+      <form
+        className="flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] p-1.5 shadow-glass backdrop-blur-md transition focus-within:border-teal-200/50"
+        onSubmit={handleSubmit}
+        role="search"
+      >
+        <span aria-hidden="true" className="pl-3 text-lg text-teal-200">
+          ⌕
         </span>
-        <label htmlFor="city-search" className="sr-only">
+        <label className="sr-only" htmlFor="city-search">
           Buscar cidade
         </label>
         <input
-          id="city-search"
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Buscar cidade…"
           autoComplete="off"
-          className="flex-1 bg-transparent text-white placeholder-white/40 outline-none"
+          className="min-w-0 flex-1 bg-transparent py-2 text-sm text-white placeholder:text-slate-400 focus:outline-none"
+          id="city-search"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Buscar cidade..."
+          type="search"
+          value={query}
         />
         <button
+          className="rounded-xl bg-teal-200 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-100 disabled:cursor-wait disabled:opacity-70"
+          disabled={isLoading}
           type="submit"
-          disabled={disabled || !value.trim()}
-          className="rounded-lg bg-accent-500 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Buscar
+          {isLoading ? 'Buscando' : 'Buscar'}
         </button>
-      </div>
-    </form>
+      </form>
+
+      {(results.length > 0 || message) && (
+        <div
+          aria-live="polite"
+          className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-white/10 bg-night-800/95 shadow-glass backdrop-blur-xl"
+        >
+          {results.length > 0 ? (
+            <ul aria-label="Resultados da busca" className="divide-y divide-white/[0.07]">
+              {results.map((city) => (
+                <li key={city.id}>
+                  <button
+                    className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-white/[0.07]"
+                    onClick={() => {
+                      setQuery(city.name);
+                      onSelect(city);
+                    }}
+                    type="button"
+                  >
+                    <span className="min-w-0 truncate text-sm font-medium text-slate-100">
+                      {city.name}
+                      <span className="ml-2 font-normal text-slate-400">
+                        {city.region ? `${city.region}, ` : ''}{city.country}
+                      </span>
+                    </span>
+                    <span aria-hidden="true" className="text-teal-200">↗</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              compact
+              hint="Confira a grafia ou tente buscar outra cidade."
+              title={message ?? 'Nenhuma cidade encontrada.'}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }

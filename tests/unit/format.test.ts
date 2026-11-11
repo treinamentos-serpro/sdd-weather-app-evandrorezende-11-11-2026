@@ -1,18 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { getDayLabel, getShortDate } from '../../src/lib/format';
+import { describe, expect, it } from 'vitest';
+import { formatForecastDate, formatLongDate } from '../../src/lib/format';
 
-describe('format', () => {
-  it('rotula o primeiro e o segundo dia', () => {
-    expect(getDayLabel('2026-06-16', 0)).toBe('Hoje');
-    expect(getDayLabel('2026-06-17', 1)).toBe('Amanhã');
+describe('formatação de datas', () => {
+  it('formata o dia da semana e a data abreviada da previsão', () => {
+    expect(formatForecastDate('2026-11-11')).toEqual({ weekday: 'qua', day: '11 de nov' });
+    expect(formatForecastDate('2026-11-12')).toEqual({ weekday: 'qui', day: '12 de nov' });
+    expect(formatForecastDate('2026-11-13')).toEqual({ weekday: 'sex', day: '13 de nov' });
   });
 
-  it('usa dia da semana para os demais', () => {
-    // 2026-06-18 é uma quinta-feira.
-    expect(getDayLabel('2026-06-18', 2)).toBe('Qui');
-  });
-
-  it('formata data curta', () => {
-    expect(getShortDate('2026-06-16')).toBe('16 Jun');
+  it('formata a data longa em português', () => {
+    expect(formatLongDate(new Date(2026, 10, 11, 12))).toBe('quarta-feira, 11 de novembro');
   });
 });

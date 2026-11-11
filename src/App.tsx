@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import CurrentWeather from './components/CurrentWeather';
 import ForecastList from './components/ForecastList';
 import SearchBar from './components/SearchBar';
@@ -12,6 +12,7 @@ import type { Unit } from './types/weather';
 export default function App() {
   const [unit, setUnit] = useState<Unit>('celsius');
   const { status, data: weather, cities, error, query, search, selectCity, retry } = useWeather();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const currentDate = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long',
@@ -19,8 +20,32 @@ export default function App() {
     month: 'long',
   }).format(new Date());
 
+  const announcement =
+    status === 'loading'
+      ? `${cities.length > 0 ? `${cities.length} cidades encontradas. ` : ''}Carregando dados meteorológicos.`
+      : status === 'success' && weather
+        ? `Previsão para ${weather.city.name}, ${weather.city.country} carregada.${cities.length > 0 ? ` ${cities.length} cidades encontradas.` : ''}${weather.forecast.length < 5 ? ' Parte da previsão não está disponível.' : ''}`
+        : status === 'empty'
+          ? query
+            ? `Busca sem resultados para ${query}.`
+            : 'Informe o nome de uma cidade.'
+          : '';
+
   return (
     <div className="min-h-screen px-4 pb-10 sm:px-6">
+      <div
+        aria-atomic="true"
+        aria-label="Atualizações da consulta"
+        className="sr-only"
+        role="status"
+      >
+        {announcement}
+      </div>
+      <div aria-atomic="true" className="sr-only" role="alert">
+        {status === 'error'
+          ? `Não foi possível carregar. ${error ?? 'Não foi possível consultar o clima.'}`
+          : ''}
+      </div>
       <header className="mx-auto flex max-w-6xl flex-col gap-5 border-b border-white/[0.08] py-5 sm:py-6 lg:flex-row lg:items-center lg:justify-between">
         <a
           aria-label="WeatherView, página inicial"
@@ -34,7 +59,7 @@ export default function App() {
             <span className="block text-sm font-semibold tracking-wide text-white">
               WeatherView
             </span>
-            <span className="mt-0.5 block text-[11px] text-slate-500">
+            <span className="mt-0.5 block text-[11px] text-slate-400">
               Seu tempo, em perspectiva
             </span>
           </span>
@@ -42,6 +67,7 @@ export default function App() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
           <SearchBar
+            inputRef={searchInputRef}
             isLoading={status === 'loading'}
             message={
               status === 'empty'
@@ -50,8 +76,14 @@ export default function App() {
                   : 'Digite o nome de uma cidade para buscar.'
                 : null
             }
-            onSearch={search}
-            onSelect={selectCity}
+            onSearch={(name) => {
+              searchInputRef.current?.focus();
+              void search(name);
+            }}
+            onSelect={(city) => {
+              searchInputRef.current?.focus();
+              void selectCity(city);
+            }}
             results={cities}
           />
           <UnitToggle onChange={setUnit} unit={unit} />
@@ -72,7 +104,13 @@ export default function App() {
         </div>
 
         {status === 'error' ? (
-          <ErrorState message={error ?? 'Não foi possível consultar o clima.'} onRetry={retry} />
+          <ErrorState
+            message={error ?? 'Não foi possível consultar o clima.'}
+            onRetry={() => {
+              searchInputRef.current?.focus();
+              void retry();
+            }}
+          />
         ) : status === 'loading' ? (
           <LoadingState message="Carregando dados meteorológicos..." />
         ) : weather ? (
@@ -87,7 +125,7 @@ export default function App() {
           />
         )}
 
-        <footer className="mt-10 flex flex-col gap-2 border-t border-white/[0.07] pt-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="mt-10 flex flex-col gap-2 border-t border-white/[0.07] pt-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>WeatherView</p>
           <p>
             Dados meteorológicos:{' '}

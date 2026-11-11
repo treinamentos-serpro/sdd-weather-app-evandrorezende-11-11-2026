@@ -15,7 +15,7 @@ it('identifica o primeiro dia como hoje e informa previsão parcial', () => {
   expect(within(days[0]).getByText('Hoje')).toBeInTheDocument();
   expect(within(days[1]).getByText('qui')).toBeInTheDocument();
   expect(within(days[2]).getByText('sex')).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('Parte da previsão não está disponível.');
+  expect(screen.getByText('Parte da previsão não está disponível.')).toBeInTheDocument();
 });
 
 it.fails('identifica o segundo dia como amanhã conforme o contrato solicitado', () => {

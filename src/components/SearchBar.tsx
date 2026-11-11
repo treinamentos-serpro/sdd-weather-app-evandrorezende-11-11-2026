@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { type FormEvent, type Ref, useState } from 'react';
 import type { City } from '../types/weather';
 import EmptyState from './states/EmptyState';
 
 interface SearchBarProps {
+  inputRef?: Ref<HTMLInputElement>;
   results: City[];
   isLoading: boolean;
   message: string | null;
@@ -11,6 +12,7 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({
+  inputRef,
   results,
   isLoading,
   message,
@@ -39,10 +41,11 @@ export default function SearchBar({
         </label>
         <input
           autoComplete="off"
-          className="min-w-0 flex-1 bg-transparent py-2 text-sm text-white placeholder:text-slate-400 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent py-2 text-sm text-white placeholder:text-slate-400"
           id="city-search"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Buscar cidade..."
+          ref={inputRef}
           type="search"
           value={query}
         />
@@ -56,16 +59,13 @@ export default function SearchBar({
       </form>
 
       {(results.length > 0 || message) && (
-        <div
-          aria-live="polite"
-          className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-white/10 bg-night-800/95 shadow-glass backdrop-blur-xl"
-        >
+        <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-white/10 bg-night-800/95 shadow-glass backdrop-blur-xl">
           {results.length > 0 ? (
             <ul aria-label="Resultados da busca" className="divide-y divide-white/[0.07]">
               {results.map((city) => (
                 <li key={city.id}>
                   <button
-                    className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-white/[0.07]"
+                    className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-white/[0.07] focus-visible:-outline-offset-4"
                     onClick={() => {
                       setQuery(city.name);
                       onSelect(city);
@@ -75,10 +75,13 @@ export default function SearchBar({
                     <span className="min-w-0 truncate text-sm font-medium text-slate-100">
                       {city.name}
                       <span className="ml-2 font-normal text-slate-400">
-                        {city.region ? `${city.region}, ` : ''}{city.country}
+                        {city.region ? `${city.region}, ` : ''}
+                        {city.country}
                       </span>
                     </span>
-                    <span aria-hidden="true" className="text-teal-200">↗</span>
+                    <span aria-hidden="true" className="text-teal-200">
+                      ↗
+                    </span>
                   </button>
                 </li>
               ))}

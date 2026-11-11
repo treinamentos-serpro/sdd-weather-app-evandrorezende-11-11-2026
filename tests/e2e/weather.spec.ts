@@ -50,7 +50,9 @@ test('busca, seleção e conversão de unidade', async ({ page }) => {
   await page.getByRole('button', { name: '°F' }).click();
   await expect(page.getByText('77°', { exact: false }).first()).toBeVisible();
   expect(forecastRequests).toBe(1);
-  await page.getByRole('button', { name: /São Paulo.*Portugal/ }).click();
+  await page.getByRole('button', { name: /São Paulo.*Portugal/ }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('searchbox', { name: 'Buscar cidade' })).toBeFocused();
   await expect(page.getByRole('heading', { name: /São Paulo.*Portugal/ })).toBeVisible();
   expect(forecastRequests).toBe(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
@@ -72,8 +74,11 @@ test('apresenta busca vazia e permite repetir uma falha', async ({ page }) => {
   await page.getByRole('button', { name: 'Buscar', exact: true }).click();
   await expect(page.getByText('Nenhuma cidade encontrada para “São Paulo”.')).toBeVisible();
   await page.getByRole('button', { name: 'Buscar', exact: true }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
-  await page.getByRole('button', { name: 'Tentar novamente' }).click();
+  await expect(page.getByRole('alert')).toContainText('Não foi possível carregar');
+  await expect(page.getByRole('region', { name: 'Não foi possível carregar' })).toBeVisible();
+  await page.getByRole('button', { name: 'Tentar novamente' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('searchbox', { name: 'Buscar cidade' })).toBeFocused();
   await expect(page.getByRole('heading', { name: /São Paulo.*Brasil/ })).toBeVisible();
 });
 
@@ -91,5 +96,7 @@ test('consulta clima no celular em 375 por 812', async ({ page }) => {
   await expect(current).toBeVisible();
   await expect(current.getByText('25°', { exact: false })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Previsão diária' })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
 });

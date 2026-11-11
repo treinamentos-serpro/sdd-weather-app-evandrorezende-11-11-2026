@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, it, vi } from 'vitest';
 import App from '../../src/App';
@@ -33,13 +33,19 @@ it('permite buscar, selecionar outra cidade e trocar unidade sem nova consulta',
   render(<App />);
   await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), 'São Paulo');
   await user.click(screen.getByRole('button', { name: /^Buscar$/ }));
+  expect(screen.getByRole('searchbox', { name: 'Buscar cidade' })).toHaveFocus();
   await screen.findByRole('heading', { name: /São Paulo.*Brasil/ });
+  expect(screen.getByRole('status', { name: 'Atualizações da consulta' })).toHaveTextContent(
+    'Previsão para São Paulo, Brasil carregada.',
+  );
   expect(screen.queryByText(/Sensação de/)).not.toBeInTheDocument();
   expect(screen.getByText('Parte da previsão não está disponível.')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '°F' }));
   expect(screen.getByText('77°', { exact: false })).toBeInTheDocument();
   expect(getWeather).toHaveBeenCalledTimes(1);
-  await user.click(screen.getByRole('button', { name: /Lisboa.*Portugal/ }));
+  screen.getByRole('button', { name: /Lisboa.*Portugal/ }).focus();
+  await user.keyboard('{Enter}');
+  expect(screen.getByRole('searchbox', { name: 'Buscar cidade' })).toHaveFocus();
   await screen.findByRole('heading', { name: /Lisboa.*Portugal/ });
   expect(getWeather).toHaveBeenCalledTimes(2);
 });
@@ -56,8 +62,10 @@ it('apresenta estado vazio e permite repetir uma falha', async () => {
   await user.click(screen.getByRole('button', { name: /^Buscar$/ }));
   await screen.findByText('Nenhuma cidade encontrada para “São Paulo”.');
   await user.click(screen.getByRole('button', { name: /^Buscar$/ }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Falha de rede.');
-  await user.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Falha de rede.'));
+  screen.getByRole('button', { name: 'Tentar novamente' }).focus();
+  await user.keyboard('{Enter}');
+  expect(screen.getByRole('searchbox', { name: 'Buscar cidade' })).toHaveFocus();
   await waitFor(() =>
     expect(screen.getByRole('heading', { name: /São Paulo.*Brasil/ })).toBeInTheDocument(),
   );
@@ -70,5 +78,33 @@ it('orienta quando a busca contém apenas espaços e não consulta previsão', a
   await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), '   ');
   await user.click(screen.getByRole('button', { name: /^Buscar$/ }));
   expect(await screen.findByText('Digite o nome de uma cidade para buscar.')).toBeInTheDocument();
+  expect(screen.getByRole('status', { name: 'Atualizações da consulta' })).toHaveTextContent(
+    'Informe o nome de uma cidade.',
+  );
   expect(getWeather).not.toHaveBeenCalled();
+});
+
+it('anuncia carregamento e ausência de resultados na mesma região persistente', async () => {
+  let resolveSearch: (cities: City[]) => void = () => {};
+  vi.mocked(searchCities).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        resolveSearch = resolve;
+      }),
+  );
+  const user = userEvent.setup();
+  render(<App />);
+  const status = screen.getByRole('status', { name: 'Atualizações da consulta' });
+  const alert = screen.getByRole('alert');
+  expect(status).toBeEmptyDOMElement();
+  expect(alert).toBeEmptyDOMElement();
+  await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), 'Cidade inexistente');
+  await user.click(screen.getByRole('button', { name: /^Buscar$/ }));
+  expect(status).toHaveTextContent('Carregando dados meteorológicos.');
+  await act(async () => {
+    resolveSearch([]);
+  });
+  expect(status).toHaveTextContent('Busca sem resultados para Cidade inexistente.');
+  expect(screen.getByRole('status', { name: 'Atualizações da consulta' })).toBe(status);
+  expect(screen.getByRole('alert')).toBe(alert);
 });

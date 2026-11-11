@@ -41,6 +41,8 @@ it('converte temperatura, sensação e previsão sem alterar a umidade', async (
   expect(within(current).getByText('70%')).toBeInTheDocument();
   expect(within(forecast).getByText('32°')).toBeInTheDocument();
   expect(within(forecast).getByText('212°')).toBeInTheDocument();
+  expect(within(forecast).getByText('212°')).toHaveTextContent('Máxima 212° Fahrenheit');
+  expect(within(forecast).getByText('32°')).toHaveTextContent('Mínima 32° Fahrenheit');
   expect(screen.getByRole('button', { name: '°F' })).toHaveAttribute('aria-pressed', 'true');
   await user.click(screen.getByRole('button', { name: '°C' }));
   expect(within(forecast).getByText('100°')).toBeInTheDocument();

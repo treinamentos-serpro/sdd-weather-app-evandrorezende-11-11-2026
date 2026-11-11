@@ -20,21 +20,29 @@ export default function ForecastCard({ day, unit, isToday = false }: ForecastCar
       >
         {isToday ? 'Hoje' : date.weekday}
       </p>
-      <p className="mt-1 text-[11px] text-slate-500">{date.day}</p>
+      <p className="mt-1 text-[11px] text-slate-400">{date.day}</p>
       <span aria-label={condition.label} className="my-3 block text-3xl" role="img">
         {condition.icon}
       </span>
       <p className="truncate text-xs text-slate-300">{condition.label}</p>
       <div className="mt-3 flex justify-center gap-2 text-sm font-medium">
         {day.max !== undefined && (
-          <span className="text-white">{formatTemperature(day.max, unit)}</span>
+          <span className="text-white">
+            <span className="sr-only">Máxima </span>
+            {formatTemperature(day.max, unit)}
+            <span className="sr-only"> {unit === 'celsius' ? 'Celsius' : 'Fahrenheit'}</span>
+          </span>
         )}
         {day.min !== undefined && (
-          <span className="text-slate-500">{formatTemperature(day.min, unit)}</span>
+          <span className="text-slate-400">
+            <span className="sr-only">Mínima </span>
+            {formatTemperature(day.min, unit)}
+            <span className="sr-only"> {unit === 'celsius' ? 'Celsius' : 'Fahrenheit'}</span>
+          </span>
         )}
       </div>
       {day.precipitationProbability !== undefined && (
-        <p className="mt-2 text-[11px] text-slate-500">Chuva {day.precipitationProbability}%</p>
+        <p className="mt-2 text-[11px] text-slate-400">Chuva {day.precipitationProbability}%</p>
       )}
     </li>
   );

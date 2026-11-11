@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getWeather, searchCities } from '../services/weatherService';
+import { getWeather, searchCities, WeatherServiceError } from '../services/weatherService';
 import type { City, WeatherData } from '../types/weather';
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'empty';
@@ -55,7 +55,9 @@ export function useWeather() {
     } catch (caughtError) {
       if (controller.signal.aborted) return;
       setError(
-        caughtError instanceof Error ? caughtError.message : 'Não foi possível consultar o clima.',
+        caughtError instanceof WeatherServiceError
+          ? caughtError.message
+          : 'Não foi possível consultar o clima. Tente novamente.',
       );
       setStatus('error');
     }

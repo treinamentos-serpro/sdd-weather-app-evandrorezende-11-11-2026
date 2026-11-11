@@ -206,15 +206,84 @@ describe('Open-Meteo', () => {
     await expect(getWeather(city)).rejects.toBeInstanceOf(WeatherServiceError);
   });
 
-  it.fails('trata JSON inválido como erro do serviço', async () => {
+  it('trata JSON inválido como erro do serviço', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{')));
     await expect(getWeather(city)).rejects.toBeInstanceOf(WeatherServiceError);
   });
 
-  it.fails('rejeita data inválida antes de entregá-la à interface', async () => {
+  it('limita o tempo de leitura do corpo da resposta', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url, options: RequestInit) =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            new Promise((_resolve, reject) => {
+              options.signal?.addEventListener('abort', () =>
+                reject(new DOMException('Aborted', 'AbortError')),
+              );
+            }),
+        }),
+      ),
+    );
+    const request = getWeather(city);
+    const assertion = expect(request).rejects.toThrow('A requisição demorou demais.');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await assertion;
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('propaga cancelamento ao ler o corpo sem tratá-lo como timeout', async () => {
+    const controller = new AbortController();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url, options: RequestInit) =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            new Promise((_resolve, reject) => {
+              options.signal?.addEventListener('abort', () =>
+                reject(new DOMException('Aborted', 'AbortError')),
+              );
+            }),
+        }),
+      ),
+    );
+    const request = getWeather(city, controller.signal);
+    await Promise.resolve();
+    controller.abort();
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('informa falha de rede quando a leitura do corpo é interrompida', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.reject(new TypeError('network')) }),
+    );
+    await expect(getWeather(city)).rejects.toThrow('Falha de rede.');
+  });
+
+  it('rejeita data inválida antes de entregá-la à interface', async () => {
     const payload = { ...forecast, daily: { ...forecast.daily, time: ['data inválida'] } };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(payload))));
     await expect(getWeather(city)).rejects.toBeInstanceOf(WeatherServiceError);
+  });
+
+  it.each([
+    'null',
+    '{"results":{}}',
+    '{"results":[null]}',
+  ])('rejeita geocodificação malformada: %s', async (payload) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(payload)));
+    await expect(searchCities('teste')).rejects.toThrow(
+      'A resposta da busca de cidades é inválida.',
+    );
+  });
+
+  it('trata previsão nula como resposta incompleta', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('null')));
+    await expect(getWeather(city)).rejects.toThrow('A resposta meteorológica está incompleta.');
   });
 
   it('traduz falhas de rede e timeout', async () => {
